@@ -22,6 +22,7 @@ import {
   Wind,
   Zap,
 } from "lucide-react"
+import { apiGet } from "@/lib/api"
 
 /*
  * IMPORTANT:
@@ -40,6 +41,40 @@ const SENSOR_DATA = {
   temperature: 28.5,
   movement: 0.12,
   waterFlow: 3.4,
+}
+
+type FloodRiskLiveResponse = {
+  success: boolean
+  flood_prediction: {
+    risk_class: number
+    risk_label: string
+    confidence: number
+  }
+  model_inputs: {
+    water_level_cm: number
+    water_level_rate_cm_per_min: number
+    rainfall_mm_per_hr: number
+    soil_moisture_pct: number
+    elevation_m: number
+  }
+  input_sources: {
+    water_level: string
+    water_level_rate: string
+    soil_moisture: string
+    rainfall: string
+    elevation: string
+  }
+  sensor_data: {
+    temperature_c: number | null
+    humidity_pct: number | null
+    vibration_index: number | null
+    latitude: number | null
+    longitude: number | null
+  }
+  thingspeak: {
+    entry_id: number | null
+    created_at: string | null
+  }
 }
 
 type SensorPoint = {
@@ -70,13 +105,10 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [selectedSensor, setSelectedSensor] = useState<SensorKey>("waterLevel")
   const [sensorHistory, setSensorHistory] = useState<SensorPoint[]>([])
-
-  // Replace this object with your existing Model 1 API/Supabase state.
-  const [floodRiskData] = useState({
-    riskLabel: "HIGH",
-    probability: 78,
-    confidence: 0.94,
-  })
+  const [floodRiskData, setFloodRiskData] =
+    useState<FloodRiskLiveResponse | null>(null)
+  const [floodRiskLoading, setFloodRiskLoading] = useState(true)
+  const [floodRiskError, setFloodRiskError] = useState<string | null>(null)
 
   useEffect(() => {
     setCurrentTime(new Date())
@@ -126,8 +158,33 @@ export default function Dashboard() {
       }
     }
 
-    loadSensorData()
-    const timer = window.setInterval(loadSensorData, 15000)
+    async function loadFloodRisk() {
+      try {
+        const result = await apiGet<FloodRiskLiveResponse>("/flood-risk/live")
+        if (!result.success) {
+          throw new Error("The prediction service returned an unsuccessful response.")
+        }
+        if (!cancelled) {
+          setFloodRiskData(result)
+          setFloodRiskError(null)
+        }
+      } catch {
+        if (!cancelled) {
+          setFloodRiskData(null)
+          setFloodRiskError("Unable to retrieve live flood-risk data.")
+        }
+      } finally {
+        if (!cancelled) setFloodRiskLoading(false)
+      }
+    }
+
+    function refreshDashboardData() {
+      void loadSensorData()
+      void loadFloodRisk()
+    }
+
+    refreshDashboardData()
+    const timer = window.setInterval(refreshDashboardData, 15000)
     return () => {
       cancelled = true
       window.clearInterval(timer)
@@ -136,24 +193,33 @@ export default function Dashboard() {
 
   const graph = useMemo(() => SENSOR_META[selectedSensor], [selectedSensor])
 
-  const risk = floodRiskData.riskLabel
+  const risk = floodRiskData?.flood_prediction.risk_label
   const riskColor =
     risk === "CRITICAL"
       ? "text-red-600"
       : risk === "HIGH"
         ? "text-orange-600"
-        : risk === "MODERATE"
+        : risk === "MEDIUM"
           ? "text-yellow-600"
-          : "text-green-600"
+          : risk === "LOW"
+            ? "text-green-600"
+            : "text-slate-500"
 
   const riskBadge =
     risk === "CRITICAL"
       ? "bg-red-50 text-red-600"
       : risk === "HIGH"
         ? "bg-orange-50 text-orange-600"
-        : risk === "MODERATE"
+        : risk === "MEDIUM"
           ? "bg-yellow-50 text-yellow-600"
-          : "bg-green-50 text-green-600"
+          : risk === "LOW"
+            ? "bg-green-50 text-green-600"
+            : "bg-slate-100 text-slate-500"
+
+    const predictionTimestamp = floodRiskData?.thingspeak.created_at
+    const predictionAge = predictionTimestamp && currentTime
+      ? formatElapsedTime(predictionTimestamp, currentTime)
+      : "Timestamp unavailable"
 
   const broadcastAlert = () => {
     window.alert("Broadcast alert initiated.")
@@ -264,42 +330,63 @@ export default function Dashboard() {
 
             <div className="flex justify-center py-7">
               <div className={`flex h-40 w-40 flex-col items-center justify-center rounded-full border-10 border-slate-200 bg-orange-50 ${riskColor}`}>
-                <div className="text-4xl font-bold leading-none">
-                  {floodRiskData.probability}%
-                </div>
-                <div className="mt-2 text-[11px] font-bold tracking-[0.16em]">
-                  {risk} RISK
-                </div>
+                {floodRiskLoading ? (
+                  <div className="px-4 text-center text-sm font-semibold leading-5 text-slate-500">
+                    Loading live prediction...
+                  </div>
+                ) : floodRiskData ? (
+                  <div className="px-4 text-center text-xl font-bold leading-6">
+                    {risk} RISK
+                  </div>
+                ) : (
+                  <div className="px-4 text-center text-sm font-semibold leading-5 text-slate-500">
+                    Prediction unavailable
+                  </div>
+                )}
               </div>
             </div>
+
+            {floodRiskError && (
+              <p role="status" className="-mt-4 mb-4 text-center text-xs text-red-600">
+                {floodRiskError}
+              </p>
+            )}
 
             <div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500">Model confidence</span>
                 <span className="font-bold text-slate-700">
-                  {(floodRiskData.confidence * 100).toFixed(0)}%
+                  {floodRiskData
+                    ? `${(floodRiskData.flood_prediction.confidence * 100).toFixed(2)}%`
+                    : "--"}
                 </span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
                   className="h-full rounded-full bg-blue-600"
-                  style={{ width: `${floodRiskData.confidence * 100}%` }}
+                  style={{
+                    width: `${(floodRiskData?.flood_prediction.confidence ?? 0) * 100}%`,
+                  }}
                 />
               </div>
             </div>
 
             <div className="mt-5 divide-y divide-slate-100 rounded-lg border border-slate-100">
-              <InfoRow label="Prediction" value={risk} valueClass={riskBadge} />
+              <InfoRow
+                label="Prediction"
+                value={risk ?? (floodRiskLoading ? "Loading..." : "Unavailable")}
+                valueClass={riskBadge}
+              />
               <InfoRow label="Model" value="Model 1" />
               <InfoRow
-                label="Last prediction"
-                value={currentTime?.toLocaleTimeString("en-IN") ?? "--:--:--"}
+                label="ThingSpeak data age"
+                value={predictionAge}
               />
             </div>
 
             <div className="mt-5 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-              Prediction is generated using the current sensor readings and
-              the trained flood-risk model.
+              Prediction uses the latest available ThingSpeak reading and the
+              configured rainfall and elevation inputs.
             </div>
           </section>
         </section>
@@ -478,6 +565,23 @@ function SystemStatus({ title, status }: { title: string; status: string }) {
       <CheckCircle2 className="h-5 w-5 text-green-600" />
     </div>
   )
+}
+
+function formatElapsedTime(timestamp: string, now: Date) {
+  const timestampMs = Date.parse(timestamp)
+  if (!Number.isFinite(timestampMs)) return "Timestamp unavailable"
+
+  const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - timestampMs) / 1000))
+  if (elapsedSeconds < 60) return `${elapsedSeconds} sec ago`
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60)
+  if (elapsedMinutes < 60) return `${elapsedMinutes} min ago`
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60)
+  if (elapsedHours < 24) return `${elapsedHours} hr ago`
+
+  const elapsedDays = Math.floor(elapsedHours / 24)
+  return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`
 }
 
 function LegendItem({ label, className }: { label: string; className: string }) {

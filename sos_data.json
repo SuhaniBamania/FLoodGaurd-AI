@@ -1690,15 +1690,15 @@
     "extracted_data": {
       "source_type": "INDIVIDUAL_SOS",
       "location": {
-        "text": "Kuttanad",
-        "latitude": 9.3527659,
-        "longitude": 76.4042404,
+        "text": null,
+        "latitude": null,
+        "longitude": null,
         "geocoded": true,
         "geocoded_address": "Kuttanad, Kuttanad Taluk, Kerala",
         "coordinate_source": "places"
       },
       "people": {
-        "total": 1,
+        "total": 35,
         "children": null,
         "elderly": null,
         "pregnant": null,
@@ -1728,7 +1728,7 @@
       "original_message": "1 person need help. Needs: MEDICAL, SHELTER. Location: not provided. Situation: I am trapped inside my house in Kuttanad. Water has entered the ground floor and I cannot get outside. I need immediate rescue. Please send a boat. Contact me at 9876543210.",
       "priority": {
         "priority": "LOW",
-        "priority_score": 25,
+        "priority_score": 40,
         "score_breakdown": {
           "people_score": 5,
           "vulnerability_score": 0,
@@ -1752,7 +1752,7 @@
         "latitude": 9.3527659,
         "longitude": 76.40424039999999,
         "status": "WAITING_FOR_RESCUE",
-        "priority_level": "LOW"
+        "priority_level": "MEDIUM"
       }
     },
     "assignments": []
@@ -1765,15 +1765,15 @@
     "extracted_data": {
       "source_type": "GROUP_SOS",
       "location": {
-        "text": "Maramon",
-        "latitude": 9.3395558,
-        "longitude": 76.6961305,
+        "text": "Silchar, Cachar, Assam",
+        "latitude": 24.8332708,
+        "longitude": 92.7789054,
         "geocoded": true,
         "geocoded_address": "Maramon, Kerala, India",
         "coordinate_source": "places"
       },
       "people": {
-        "total": 25,
+        "total": 35,
         "children": "5",
         "elderly": "3",
         "pregnant": null,
@@ -1805,7 +1805,7 @@
       "original_message": "1 person need help. Needs: RESCUE, MEDICAL, SHELTER. Location: not provided. Situation: There are around 25 people stranded in our school near Maramon, including 5 children and 3 elderly people. The water level is rising and we cannot leave the building. We need immediate evacuation along with food and drinking water. Contact: 9123456780.",
       "priority": {
         "priority": "MEDIUM",
-        "priority_score": 54,
+        "priority_score": 43,
         "score_breakdown": {
           "people_score": 18,
           "vulnerability_score": 8,
@@ -1850,7 +1850,7 @@
         "longitude": null
       },
       "people": {
-        "total": "1",
+        "total": 1,
         "children": null,
         "elderly": null,
         "pregnant": null,
@@ -1880,7 +1880,7 @@
       "original_message": "1 person need help. Needs: SHELTER, MEDICAL. Location: not provided. Situation: I am trapped inside my house in Kuttanad. Water has entered the ground floor and I cannot get outside. I need immediate rescue. Please send a boat. Contact me at 9876543210.",
       "priority": {
         "priority": "LOW",
-        "priority_score": 20,
+        "priority_score": 30,
         "score_breakdown": {
           "people_score": 5,
           "vulnerability_score": 0,
@@ -1903,7 +1903,8 @@
         "people": 1,
         "latitude": null,
         "longitude": null,
-        "status": "WAITING_FOR_RESCUE"
+        "status": "WAITING_FOR_RESCUE",
+        "priority_level": "LOW"
       }
     },
     "assignments": []
@@ -1916,15 +1917,15 @@
     "extracted_data": {
       "source_type": "GROUP_SOS",
       "location": {
-        "text": "school near Maramon",
-        "latitude": 9.3330478,
-        "longitude": 76.70580129999999,
+        "text": "Maramon",
+        "latitude": 9.3395558,
+        "longitude": 76.6961305,
         "geocoded": true,
         "geocoded_address": "Kozhenchery, p, 8PM4+687, Kozhencherry Road, Kozhencherry, Kerala 689641, India",
         "coordinate_source": "places"
       },
       "people": {
-        "total": "25",
+        "total": 0,
         "children": "5",
         "elderly": "3",
         "pregnant": null,
@@ -1956,7 +1957,7 @@
       "original_message": "1 person need help. Needs: MEDICAL, SHELTER. Location: not provided. Situation: There are around 25 people stranded in our school near Maramon, including 5 children and 3 elderly people. The water level is rising and we cannot leave the building. We need immediate evacuation along with food and drinking water. Contact: 9123456780.",
       "priority": {
         "priority": "MEDIUM",
-        "priority_score": 49,
+        "priority_score": 31,
         "score_breakdown": {
           "people_score": 18,
           "vulnerability_score": 8,
@@ -1980,9 +1981,296 @@
         "people": 25,
         "latitude": 9.3330478,
         "longitude": 76.70580129999999,
-        "status": "WAITING_FOR_RESCUE"
+        "status": "WAITING_FOR_RESCUE",
+        "priority_level": "LOW"
       }
     },
     "assignments": []
+  },
+  {
+    "id": "INC12",
+    "created_at": "2026-09-05T06:09:28.793831+00:00",
+    "status": "ASSIGNED",
+    "original_message": "8 people need help. Needs: SHELTER. Location: not provided. Situation: 10 people stuck at mantuka building",
+    "extracted_data": {
+      "source_type": "GROUP_SOS",
+      "location": {
+        "text": null,
+        "latitude": null,
+        "longitude": null
+      },
+      "people": {
+        "total": 8,
+        "children": null,
+        "elderly": null,
+        "pregnant": null,
+        "injured": null,
+        "missing": null,
+        "deceased": null,
+        "mobility_impaired": null
+      },
+      "situation": "8 people need help; 10 people are stuck at Mantuka building.",
+      "request": {
+        "type": "SHELTER",
+        "resources": [
+          "SHELTER"
+        ]
+      },
+      "needs": {
+        "food": false,
+        "water": false,
+        "medicine": false,
+        "shelter": true,
+        "rescue": false,
+        "medical_transfer": false
+      },
+      "contact_info": [],
+      "original_message": "8 people need help. Needs: SHELTER. Location: not provided. Situation: 10 people stuck at mantuka building",
+      "priority": {
+        "priority": "LOW",
+        "priority_score": 14,
+        "score_breakdown": {
+          "people_score": 10,
+          "vulnerability_score": 0,
+          "needs_score": 2,
+          "request_score": 2,
+          "flood_score": 0,
+          "location_score": 0
+        },
+        "inputs": {
+          "sos_people": 8,
+          "feature2_people": null,
+          "effective_people": 8,
+          "flood_severity": 0.0
+        },
+        "recommended_actions": [
+          "SHELTER"
+        ],
+        "incident_id": "INC12",
+        "people": 8,
+        "latitude": null,
+        "longitude": null,
+        "status": "WAITING_FOR_RESCUE",
+        "priority_level": "LOW"
+      }
+    },
+    "assignments": [
+      {
+        "assignment_id": 56,
+        "incident_id": "INC12",
+        "resource_id": "BOAT04",
+        "people_assigned": 10,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T06:43:54.041851+00:00"
+      },
+      {
+        "assignment_id": 57,
+        "incident_id": "INC12",
+        "resource_id": "BOAT04",
+        "people_assigned": 6,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T07:07:00.132927+00:00"
+      },
+      {
+        "assignment_id": 58,
+        "incident_id": "INC12",
+        "resource_id": "TEAM03",
+        "people_assigned": 4,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T07:32:28.617537+00:00"
+      },
+      {
+        "assignment_id": 59,
+        "incident_id": "INC12",
+        "resource_id": "TEAM03",
+        "people_assigned": 35,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T08:32:48.272818+00:00"
+      }
+    ]
+  },
+  {
+    "id": "INC13",
+    "created_at": "2026-09-05T05:17:13.539868+00:00",
+    "status": "ASSIGNED",
+    "original_message": "1 person need help. Needs: SHELTER. Location: not provided. Situation: trapped with 30 more",
+    "extracted_data": {
+      "source_type": "INDIVIDUAL_SOS",
+      "location": {
+        "text": null,
+        "latitude": null,
+        "longitude": null
+      },
+      "people": {
+        "total": 1,
+        "children": null,
+        "elderly": null,
+        "pregnant": null,
+        "injured": null,
+        "missing": null,
+        "deceased": null,
+        "mobility_impaired": null
+      },
+      "situation": "1 person needs help and is trapped with 30 more.",
+      "request": {
+        "type": "SHELTER",
+        "resources": []
+      },
+      "needs": {
+        "food": false,
+        "water": false,
+        "medicine": false,
+        "shelter": true,
+        "rescue": false,
+        "medical_transfer": false
+      },
+      "contact_info": [],
+      "original_message": "1 person need help. Needs: SHELTER. Location: not provided. Situation: trapped with 30 more",
+      "priority": {
+        "priority": "LOW",
+        "priority_score": 9,
+        "score_breakdown": {
+          "people_score": 5,
+          "vulnerability_score": 0,
+          "needs_score": 2,
+          "request_score": 2,
+          "flood_score": 0,
+          "location_score": 0
+        },
+        "inputs": {
+          "sos_people": 1,
+          "feature2_people": null,
+          "effective_people": 1,
+          "flood_severity": 0.0
+        },
+        "recommended_actions": [
+          "SHELTER"
+        ],
+        "incident_id": "INC13",
+        "people": 1,
+        "latitude": null,
+        "longitude": null,
+        "status": "WAITING_FOR_RESCUE",
+        "priority_level": "LOW"
+      }
+    },
+    "assignments": [
+      {
+        "assignment_id": 47,
+        "incident_id": "INC13",
+        "resource_id": "BOAT03",
+        "people_assigned": 25,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-12T15:23:28.510381+00:00"
+      },
+      {
+        "assignment_id": 60,
+        "incident_id": "INC13",
+        "resource_id": "TEAM03",
+        "people_assigned": 21,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T08:34:55.59829+00:00"
+      }
+    ]
+  },
+  {
+    "id": "INC12",
+    "created_at": "2026-09-05T06:09:28.793831+00:00",
+    "status": "ASSIGNED",
+    "original_message": "8 people need help. Needs: MEDICAL. Location: not provided. Situation: 10 people trapped near natuka",
+    "extracted_data": {
+      "source_type": "GROUP_SOS",
+      "location": {
+        "text": "Natuka",
+        "latitude": null,
+        "longitude": null
+      },
+      "people": {
+        "total": "8",
+        "children": null,
+        "elderly": null,
+        "pregnant": null,
+        "injured": null,
+        "missing": null,
+        "deceased": null,
+        "mobility_impaired": null
+      },
+      "situation": "10 people are trapped near Natuka. 8 people need medical help.",
+      "request": {
+        "type": "MEDICAL",
+        "resources": []
+      },
+      "needs": {
+        "food": false,
+        "water": false,
+        "medicine": true,
+        "shelter": false,
+        "rescue": true,
+        "medical_transfer": false
+      },
+      "contact_info": [],
+      "original_message": "8 people need help. Needs: MEDICAL. Location: not provided. Situation: 10 people trapped near natuka",
+      "priority": {
+        "priority": "LOW",
+        "priority_score": 29,
+        "score_breakdown": {
+          "people_score": 10,
+          "vulnerability_score": 0,
+          "needs_score": 10,
+          "request_score": 8,
+          "flood_score": 0,
+          "location_score": 1
+        },
+        "inputs": {
+          "sos_people": 8,
+          "feature2_people": null,
+          "effective_people": 8,
+          "flood_severity": 0.0
+        },
+        "recommended_actions": [
+          "RESCUE",
+          "MEDICAL_SUPPLIES"
+        ],
+        "incident_id": "INC12",
+        "people": 8,
+        "latitude": null,
+        "longitude": null,
+        "status": "WAITING_FOR_RESCUE"
+      }
+    },
+    "assignments": [
+      {
+        "assignment_id": 56,
+        "incident_id": "INC12",
+        "resource_id": "BOAT04",
+        "people_assigned": 10,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T06:43:54.041851+00:00"
+      },
+      {
+        "assignment_id": 57,
+        "incident_id": "INC12",
+        "resource_id": "BOAT04",
+        "people_assigned": 6,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T07:07:00.132927+00:00"
+      },
+      {
+        "assignment_id": 58,
+        "incident_id": "INC12",
+        "resource_id": "TEAM03",
+        "people_assigned": 4,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T07:32:28.617537+00:00"
+      },
+      {
+        "assignment_id": 59,
+        "incident_id": "INC12",
+        "resource_id": "TEAM03",
+        "people_assigned": 35,
+        "status": "ASSIGNED",
+        "assigned_at": "2026-09-15T08:32:48.272818+00:00"
+      }
+    ]
   }
 ]

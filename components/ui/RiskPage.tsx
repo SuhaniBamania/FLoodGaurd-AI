@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 
 type Emergency = {
-  sos_id: number
+  sos_id: string | number
   created_at: string
   status: string
   location: string
@@ -149,7 +149,7 @@ export default function RiskPage() {
   const [data, setData] = useState<DashboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   async function fetchDashboard() {
     try {
@@ -464,7 +464,8 @@ export default function RiskPage() {
         {/* EMERGENCY ROWS */}
         {!loading && emergencies.map((item) => {
           const style = getPriorityStyle(item.priority.priority)
-          const isExpanded = expandedId === item.sos_id
+          const rowKey = `${item.sos_id}-${item.rank}`
+          const isExpanded = expandedId === rowKey
 
           const sosPeople =
             item.priority.inputs.sos_people ?? 0
@@ -479,14 +480,14 @@ export default function RiskPage() {
 
           return (
             <div
-              key={item.sos_id}
+              key={rowKey}
               className="border-b border-[#E6EDF3] last:border-b-0"
             >
 
               {/* MAIN ROW */}
               <button
                 onClick={() =>
-                  setExpandedId(isExpanded ? null : item.sos_id)
+                    setExpandedId(isExpanded ? null : rowKey)
                 }
                 className="w-full px-5 py-5 text-left transition hover:bg-[#F8FAFC]"
               >

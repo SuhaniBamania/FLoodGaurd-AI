@@ -18,6 +18,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import re
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
@@ -1196,102 +1197,258 @@ async def analyze_sos(request: SOSRequest):
 @app.get("/sos")
 def get_sos_requests():
     try:
-        # Backfill coordinates for SOS records created before geocoding existed.
-        changed = False
-        for sos in SOS_STORE:
-            extracted = sos.get("extracted_data")
-            if isinstance(extracted, str):
-                try:
-                    extracted = json.loads(extracted)
-                except (json.JSONDecodeError, TypeError):
-                    extracted = None
-
-            if isinstance(extracted, dict):
-                location = extracted.get("location")
-                has_coordinates = (
-                    isinstance(location, dict)
-                    and location.get("latitude") is not None
-                    and location.get("longitude") is not None
-                )
-                if not has_coordinates and _geocode_sos_location(extracted):
-                    sos["extracted_data"] = extracted
-                    changed = True
-
-        if changed:
-            save_sos_store(SOS_STORE)
+        # --------------------------------------------------------
+        # READ EXISTING SOS DATA ONLY
+        # Do NOT geocode here.
+        # Do NOT call external APIs here.
+        # --------------------------------------------------------
 
         incidents = (
-            operations_supabase.table("rescue_incidents")
+            operations_supabase
+            .table("rescue_incidents")
             .select("*")
             .order("created_at", desc=True)
             .execute()
             .data
         )
-        requests = []
+
+        incident_ids = [
+            incident["incident_id"]
+            for incident in incidents
+            if incident.get("incident_id")
+        ]
+
+        assignments = (
+            operations_supabase
+            .table("rescue_assignments")
+            .select("*")
+            .in_("incident_id", incident_ids)
+            .execute()
+            .data
+            if incident_ids
+            else []
+        )
+
+        # --------------------------------------------------------
+        # GROUP ASSIGNMENTS BY INCIDENT
+        # --------------------------------------------------------
+
+        assignments_by_incident = {}
+
+        for assignment in assignments:
+            incident_id = str(
+                assignment.get("incident_id")
+            )
+
+            assignments_by_incident.setdefault(
+                incident_id,
+                []
+            ).append(assignment)
+
+        # --------------------------------------------------------
+        # LOCAL SOS STORE LOOKUP
+        # --------------------------------------------------------
+
         stored_sos = {
             str(item.get("id")): item
             for item in SOS_STORE
         }
+
+        requests = []
+
+        # --------------------------------------------------------
+        # BUILD RESPONSE
+        # --------------------------------------------------------
+
         for incident in incidents:
-            assignments = (
-                operations_supabase.table("rescue_assignments")
-                .select("*")
-                .eq("incident_id", incident["incident_id"])
-                .execute()
-                .data
+
+            incident_id = str(
+                incident.get("incident_id")
+            )
+
+            incident_assignments = (
+                assignments_by_incident.get(
+                    incident_id,
+                    []
+                )
             )
 
             stored_request = stored_sos.get(
-                str(incident["incident_id"]),
+                incident_id,
                 {}
             )
+
             extracted_data = stored_request.get(
                 "extracted_data",
                 {}
             )
+
+            # Backend may have stored JSON as a string
             if isinstance(extracted_data, str):
                 try:
-                    extracted_data = json.loads(extracted_data)
-                except (json.JSONDecodeError, TypeError):
+                    extracted_data = json.loads(
+                        extracted_data
+                    )
+                except (
+                    json.JSONDecodeError,
+                    TypeError
+                ):
                     extracted_data = {}
-            if not isinstance(extracted_data, dict):
+
+            if not isinstance(
+                extracted_data,
+                dict
+            ):
                 extracted_data = {}
 
+            # ----------------------------------------------------
+            # LOCATION
+            # ----------------------------------------------------
+
+            existing_location = (
+                extracted_data.get(
+                    "location",
+                    {}
+                )
+            )
+
+            if not isinstance(
+                existing_location,
+                dict
+            ):
+                existing_location = {}
+
             extracted_data["location"] = {
-                **extracted_data.get("location", {}),
-                "text": incident.get("location_text"),
-                "latitude": incident.get("latitude"),
-                "longitude": incident.get("longitude"),
-            }
-            extracted_data["people"] = {
-                **extracted_data.get("people", {}),
-                "total": incident.get("people_count"),
-            }
-            extracted_data["priority"] = {
-                **extracted_data.get("priority", {}),
-                "priority_score": incident.get("priority_score"),
-                "priority_level": incident.get("priority_level"),
+                **existing_location,
+
+                "text":
+                    incident.get(
+                        "location_text"
+                    ),
+
+                "latitude":
+                    incident.get(
+                        "latitude"
+                    ),
+
+                "longitude":
+                    incident.get(
+                        "longitude"
+                    ),
             }
 
+            # ----------------------------------------------------
+            # PEOPLE
+            # ----------------------------------------------------
+
+            existing_people = (
+                extracted_data.get(
+                    "people",
+                    {}
+                )
+            )
+
+            if not isinstance(
+                existing_people,
+                dict
+            ):
+                existing_people = {}
+
+            extracted_data["people"] = {
+                **existing_people,
+
+                "total":
+                    incident.get(
+                        "people_count"
+                    ),
+            }
+
+            # ----------------------------------------------------
+            # PRIORITY
+            # ----------------------------------------------------
+
+            existing_priority = (
+                extracted_data.get(
+                    "priority",
+                    {}
+                )
+            )
+
+            if not isinstance(
+                existing_priority,
+                dict
+            ):
+                existing_priority = {}
+
+            extracted_data["priority"] = {
+                **existing_priority,
+
+                "priority_score":
+                    incident.get(
+                        "priority_score"
+                    ),
+
+                "priority_level":
+                    incident.get(
+                        "priority_level"
+                    ),
+            }
+
+            # ----------------------------------------------------
+            # FINAL REQUEST
+            # ----------------------------------------------------
+
             requests.append({
-                "id": incident["incident_id"],
-                "created_at": incident["created_at"],
-                "status": "ASSIGNED" if assignments else "PENDING",
-                "original_message": stored_request.get(
-                    "original_message",
-                    extracted_data.get("original_message", "")
+
+                "id":
+                    incident.get(
+                        "incident_id"
+                    ),
+
+                "created_at":
+                    incident.get(
+                        "created_at"
+                    ),
+
+                "status": (
+                    "ASSIGNED"
+                    if incident_assignments
+                    else "PENDING"
                 ),
-                "extracted_data": extracted_data,
-                "assignments": assignments,
+
+                "original_message":
+                    stored_request.get(
+                        "original_message",
+                        extracted_data.get(
+                            "original_message",
+                            ""
+                        )
+                    ),
+
+                "extracted_data":
+                    extracted_data,
+
+                "assignments":
+                    incident_assignments,
             })
+
         return {
             "requests": requests
         }
 
     except Exception as e:
+
+        print(
+            "🔥 GET /sos ERROR:",
+            repr(e)
+        )
+
         raise HTTPException(
             status_code=500,
-            detail=f"Could not fetch SOS requests: {str(e)}"
+            detail=(
+                f"Could not fetch SOS requests: "
+                f"{str(e)}"
+            )
         )
 
 
@@ -4224,6 +4381,18 @@ def _thingspeak_number(value):
 
 @app.get("/api/thingspeak/sensor-data")
 async def get_thingspeak_sensor_data():
+    readings = _read_thingspeak_readings()
+    public_readings = [
+        {key: value for key, value in reading.items() if key != "entry_id"}
+        for reading in readings
+    ]
+    return {
+        "readings": public_readings,
+        "latest": public_readings[0] if public_readings else None,
+    }
+
+
+def _read_thingspeak_readings():
     channel_id = os.getenv("THINGSPEAK_CHANNEL_ID")
     read_api_key = os.getenv("THINGSPEAK_READ_API_KEY")
 
@@ -4252,6 +4421,7 @@ async def get_thingspeak_sensor_data():
     readings = []
     for feed in payload.get("feeds", []):
         reading = {
+            "entry_id": feed.get("entry_id"),
             "created_at": feed.get("created_at"),
             "water_distance_cm": _thingspeak_number(feed.get("field1")),
             "water_rate_cm_per_min": _thingspeak_number(feed.get("field2")),
@@ -4266,7 +4436,172 @@ async def get_thingspeak_sensor_data():
             readings.append(reading)
 
     readings.reverse()
+    return readings
+
+
+def _parse_thingspeak_timestamp(value):
+    try:
+        timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    return timestamp
+
+
+def _configured_flood_float(name):
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise HTTPException(
+            status_code=500,
+            detail=f"Required configuration {name} is missing.",
+        )
+
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Configuration {name} must be numeric.",
+        ) from error
+
+    if not math.isfinite(parsed):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Configuration {name} must be a finite number.",
+        )
+    return parsed
+
+
+def _latest_valid_thingspeak_reading(readings):
+    required_fields = (
+        "water_distance_cm",
+        "water_rate_cm_per_min",
+        "soil_moisture_pct",
+    )
+    timestamped_readings = [
+        (reading, _parse_thingspeak_timestamp(reading.get("created_at")))
+        for reading in readings
+    ]
+    timestamped_readings = [
+        (reading, timestamp)
+        for reading, timestamp in timestamped_readings
+        if timestamp is not None
+    ]
+
+    valid_readings = [
+        (reading, timestamp)
+        for reading, timestamp in timestamped_readings
+        if all(
+            isinstance(reading.get(field), (int, float))
+            and math.isfinite(reading[field])
+            for field in required_fields
+        )
+    ]
+    if valid_readings:
+        return max(valid_readings, key=lambda item: item[1])[0]
+
+    if timestamped_readings:
+        newest = max(timestamped_readings, key=lambda item: item[1])[0]
+        missing_fields = [
+            field
+            for field in required_fields
+            if not isinstance(newest.get(field), (int, float))
+            or not math.isfinite(newest[field])
+        ]
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Newest ThingSpeak entry has missing or non-numeric required "
+                f"sensor field(s): {', '.join(missing_fields)}."
+            ),
+        )
+
+    raise HTTPException(
+        status_code=502,
+        detail="ThingSpeak returned no readings with a valid created_at timestamp.",
+    )
+
+
+def _live_flood_model_inputs(reading, water_sensor_height_cm, rainfall_mm_per_hr, elevation_m):
+    distance_cm = reading["water_distance_cm"]
+    distance_rate_cm_per_min = reading["water_rate_cm_per_min"]
+    soil_moisture_pct = reading["soil_moisture_pct"]
+
+    water_level_cm = water_sensor_height_cm - distance_cm
+    # Arduino field2 is distance-change rate: shrinking distance means rising water.
+    water_level_rate_cm_per_min = -distance_rate_cm_per_min
+
+    values = {
+        "water_level_cm": water_level_cm,
+        "water_level_rate_cm_per_min": water_level_rate_cm_per_min,
+        "rainfall_mm_per_hr": rainfall_mm_per_hr,
+        "soil_moisture_pct": soil_moisture_pct,
+        "elevation_m": elevation_m,
+    }
+    invalid_values = [
+        name for name, value in values.items() if not math.isfinite(value)
+    ]
+    if invalid_values:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid calculated Model 1 input(s): {', '.join(invalid_values)}.",
+        )
+    if elevation_m + 1.0 == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="FLOOD_ELEVATION_M produces an invalid Model 1 calculation.",
+        )
+    if soil_moisture_pct + 1.0 == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="ThingSpeak soil_moisture_pct produces an invalid Model 1 calculation.",
+        )
+    return values
+
+
+@app.get("/flood-risk/live")
+async def live_flood_risk():
+    reading = _latest_valid_thingspeak_reading(_read_thingspeak_readings())
+    water_sensor_height_cm = _configured_flood_float("WATER_SENSOR_HEIGHT_CM")
+    rainfall_mm_per_hr = _configured_flood_float("FLOOD_RAINFALL_MM_PER_HR")
+    elevation_m = _configured_flood_float("FLOOD_ELEVATION_M")
+
+    model_inputs = _live_flood_model_inputs(
+        reading,
+        water_sensor_height_cm,
+        rainfall_mm_per_hr,
+        elevation_m,
+    )
+    try:
+        prediction = predict_flood_risk(**model_inputs)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Live flood-risk inference failed: {error}",
+        ) from error
+
     return {
-        "readings": readings,
-        "latest": readings[0] if readings else None,
+        "success": True,
+        "flood_prediction": prediction,
+        "model_inputs": model_inputs,
+        "input_sources": {
+            "water_level": "ThingSpeak field1 + WATER_SENSOR_HEIGHT_CM",
+            "water_level_rate": "negative of ThingSpeak field2",
+            "soil_moisture": "ThingSpeak field3",
+            "rainfall": "environment_configured",
+            "elevation": "environment_configured",
+        },
+        "sensor_data": {
+            "temperature_c": reading.get("temperature_c"),
+            "humidity_pct": reading.get("humidity_pct"),
+            "vibration_index": reading.get("vibration_index"),
+            "latitude": reading.get("latitude"),
+            "longitude": reading.get("longitude"),
+        },
+        "thingspeak": {
+            "entry_id": reading.get("entry_id"),
+            "created_at": reading["created_at"],
+        },
     }
